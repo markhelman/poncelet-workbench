@@ -1,6 +1,8 @@
-import { Play, Pause, RotateCcw, Settings, Activity, Target, Minimize2, CircleDot, BarChart3, Flag } from 'lucide-react'
+import { Play, Pause, RotateCcw, Settings, Activity, Target, Minimize2, CircleDot, BarChart3, Flag, BookOpen } from 'lucide-react'
 import { useState } from 'react'
-import { Milestone, MILESTONES } from '../milestones'
+import type { Milestone } from '../milestones'
+import { MILESTONES } from '../milestones'
+import TheorySlideshow from './TheorySlideshow'
 
 interface WorkbenchSidebarProps {
   // Foci
@@ -32,19 +34,21 @@ interface WorkbenchSidebarProps {
     perimeter: number;
     area: number;
   } | null;
+  vertices: {r: number, i: number}[] | null;
+  centers: { G: {r: number, i: number}, H: {r: number, i: number}, O: {r: number, i: number}, I: {r: number, i: number} } | null;
 
   // Presets
   onApplyMilestone: (m: Milestone) => void;
 }
 
-type Tab = 'milestones' | 'controls' | 'analysis'
+type Tab = 'milestones' | 'controls' | 'analysis' | 'theory'
 
 export function WorkbenchSidebar({
   fx, setFx, fy, setFy, gx, setGx, gy, setGy,
   A, setA, B, setB,
   isPlaying, setIsPlaying, speed, setSpeed, theta, setTheta,
   showG, setShowG, showH, setShowH, showO, setShowO, showI, setShowI,
-  triangleProps,
+  triangleProps, vertices, centers,
   onApplyMilestone
 }: WorkbenchSidebarProps) {
   const [activeTab, setActiveTab] = useState<Tab>('controls')
@@ -75,6 +79,14 @@ export function WorkbenchSidebar({
         >
           <BarChart3 size={20} />
           <span>Analysis</span>
+        </button>
+        <button 
+          className={activeTab === 'theory' ? 'active' : ''} 
+          onClick={() => setActiveTab('theory')}
+          title="Theory"
+        >
+          <BookOpen size={20} />
+          <span>Theory</span>
         </button>
       </nav>
 
@@ -193,6 +205,25 @@ export function WorkbenchSidebar({
         {activeTab === 'analysis' && (
           <div className="demo-section">
             <header><BarChart3 size={16}/> Analysis</header>
+            <button 
+              className="export-btn"
+              onClick={() => {
+                const data = {
+                    ...vertices?.reduce((acc, v, i) => ({...acc, [`w${i+1}`]: `${v.r.toFixed(2)},${v.i.toFixed(2)}`}), {}),
+                    ...centers && Object.entries(centers).reduce((acc, [k, v]) => ({...acc, [k]: `${v.r.toFixed(2)},${v.i.toFixed(2)}`}), {})
+                };
+                const csv = "data:text/csv;charset=utf-8," + Object.entries(data).map(([k, v]) => `${k},${v}`).join("\n");
+                const encodedUri = encodeURI(csv);
+                const link = document.createElement("a");
+                link.setAttribute("href", encodedUri);
+                link.setAttribute("download", "poncelet_data.csv");
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+              }}
+            >
+              Export CSV
+            </button>
             {triangleProps ? (
               <div className="stats-grid">
                 <div className="stat-item">
@@ -203,22 +234,30 @@ export function WorkbenchSidebar({
                   <span className="stat-label">Perimeter</span>
                   <span className="stat-value">{triangleProps.perimeter.toFixed(2)}</span>
                 </div>
-                <div className="stat-item">
-                  <span className="stat-label">Side a</span>
-                  <span className="stat-value">{triangleProps.sideA.toFixed(2)}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Side b</span>
-                  <span className="stat-value">{triangleProps.sideB.toFixed(2)}</span>
-                </div>
-                <div className="stat-item">
-                  <span className="stat-label">Side c</span>
-                  <span className="stat-value">{triangleProps.sideC.toFixed(2)}</span>
-                </div>
               </div>
-            ) : (
-              <p className="section-help">Move the foci to form a triangle.</p>
-            )}
+            ) : null}
+            
+            <div className="demo-section">
+              <header>Vertices & Centers</header>
+              <table className="stats-table" style={{ width: '100%', fontSize: '0.85rem' }}>
+                <thead><tr><th>Pt</th><th>x</th><th>y</th></tr></thead>
+                <tbody>
+                  {vertices && vertices.map((v, i) => (
+                    <tr key={`v${i}`}><td>w{i+1}</td><td>{v.r.toFixed(2)}</td><td>{v.i.toFixed(2)}</td></tr>
+                  ))}
+                  {centers && Object.entries(centers).map(([k, v]) => (
+                    <tr key={k}><td>{k}</td><td>{v.r.toFixed(2)}</td><td>{v.i.toFixed(2)}</td></tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'theory' && (
+          <div className="demo-section">
+            <header><BookOpen size={16}/> Theory</header>
+            <TheorySlideshow onStateChange={console.log} />
           </div>
         )}
       </div>
