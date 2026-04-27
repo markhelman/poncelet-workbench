@@ -1,5 +1,10 @@
 export class Complex {
-  constructor(public r: number, public i: number) {}
+  r: number;
+  i: number;
+  constructor(r: number, i: number) {
+    this.r = r;
+    this.i = i;
+  }
 
   static fromAngle(theta: number) {
     return new Complex(Math.cos(theta), Math.sin(theta));
@@ -174,15 +179,17 @@ export function getIncenter(a: Complex, b: Complex, c: Complex): Complex {
   );
 }
 
-export function getTriangleProperties(vertices: Complex[]) {
+export function getTriangleProperties(vertices: [Complex, Complex, Complex]) {
   const [a, b, c] = vertices;
   const sideA = b.sub(c).abs();
   const sideB = a.sub(c).abs();
   const sideC = a.sub(b).abs();
 
   const perimeter = sideA + sideB + sideC;
-  const s = perimeter / 2;
-  const area = Math.sqrt(s * (s - sideA) * (s - sideB) * (s - sideC));
+  const semiPerimeter = perimeter / 2;
+  const area = Math.sqrt(
+    Math.max(0, semiPerimeter * (semiPerimeter - sideA) * (semiPerimeter - sideB) * (semiPerimeter - sideC))
+  );
 
   return { sideA, sideB, sideC, perimeter, area };
 }
